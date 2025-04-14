@@ -31,6 +31,7 @@ ENV NODE_ENV=production
 
 # Copy necessary files from previous stages
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/build ./build
 # Copy package.json in case runtime needs it (e.g., for version info)
