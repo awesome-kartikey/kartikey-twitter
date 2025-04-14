@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+build
+dist
+.env*
+data/ # Ignore local docker db data if present
+*.env
+.DS_Store
+
+# Frontend specific ignores (add to twitter-clone/.dockerignore)
+.next
