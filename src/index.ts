@@ -20,13 +20,15 @@ async function init() {
   //      you might still want to apply them globally here *before* other routes
   //      if those routes also need them. Re-applying is usually harmless.
   app.use(bodyParser.json());
-  app.use(cors({
+  app.use(
+    cors({
       // It's recommended to configure CORS more strictly for production:
       // origin: 'YOUR_FRONTEND_URL', // e.g., 'http://localhost:3000'
       // methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       // allowedHeaders: ['Content-Type', 'Authorization'],
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  }));
+      origin: process.env.FRONTEND_URL || "https://pulse-stream.onrender.com",
+    })
+  );
 
   // 3. Define other non-GraphQL API routes BEFORE the GraphQL endpoint if paths could conflict,
   //    or anywhere if paths are distinct.
