@@ -1,40 +1,44 @@
-# Stage 1: Install dependencies
-FROM node:18-alpine AS deps
+
+# Stage 1: Base Node image (consistent across stages)
+FROM node:18-alpine AS base
 WORKDIR /app
+
+# Stage 2: Install ONLY production dependencies
+FROM base AS deps
 COPY package.json package-lock.json ./
-RUN apk update && apk upgrade # Update alpine packages.
-RUN npm install --production
+# --omit=dev is equivalent to --production for npm v7+
+RUN npm ci --omit=dev
 
-# Stage 2: Build the application
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Stage 3: Build the application
+FROM base AS builder
+# First copy package files and install ALL dependencies (including dev)
+COPY package.json package-lock.json ./
+RUN npm ci
+# Then copy the rest of the source code
 COPY . .
-
-# Generate Prisma Client (important step)
-# Use --no-engine flag if the build environment architecture differs from runtime
-# Or ensure build/runtime use compatible architectures
+# Generate Prisma Client (needs schema and dev deps)
+# Ensure your schema is correctly referenced in package.json or prisma cmd
 RUN npx prisma generate
-
-# Build TypeScript to JavaScript
+# Build TypeScript to JavaScript (needs typescript dev dep)
 RUN npm run build
 
-# Stage 3: Production image
-FROM node:18-alpine AS runner
+# Stage 4: Production image
+FROM base AS runner
 WORKDIR /app
 
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 
-# Copy production dependencies
+# Copy necessary files from previous stages
 COPY --from=deps /app/node_modules ./node_modules
-# Copy Prisma schema (needed by Prisma Client at runtime) and migrations (optional but good practice)
 COPY --from=builder /app/prisma ./prisma
-# Copy compiled JavaScript output
 COPY --from=builder /app/build ./build
+# Copy package.json in case runtime needs it (e.g., for version info)
+COPY package.json .
 
-# Expose the port the app runs on
+# Expose the port the app runs on (make sure it matches your server's config)
 EXPOSE 8000
 
 # Command to run the application
+# Ensure your build output entry point is correct
 CMD ["node", "build/index.js"]
