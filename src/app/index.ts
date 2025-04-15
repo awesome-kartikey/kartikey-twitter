@@ -1,24 +1,28 @@
+// twitter-clone-server/src/app/index.ts
+
 import express from "express";
-import bodyParser from "body-parser";
-import cors from "cors";
+// import bodyParser from "body-parser"; // Remove if applied globally in src/index.ts
+// import cors from "cors"; // Remove if applied globally in src/index.ts
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
-import { prismaClient } from "../clients/db";
+import { prismaClient } from "../clients/db"; // Verify path
 
-import { User } from "./user";
-import { Tweet } from "./tweet";
-import { GraphqlContext } from "../interfaces";
-import JWTService from "../services/jwt";
+import { User } from "./user"; // Verify path
+import { Tweet } from "./tweet"; // Verify path
+import { GraphqlContext } from "../interfaces"; // Verify path
+import JWTService from "../services/jwt"; // Verify path
 
+// Change function signature: Remove the 'app' parameter
 export async function initServer() {
+  // Create the app instance HERE
   const app = express();
 
-  app.use(bodyParser.json());
-  app.use(cors());
+  // Apply middleware needed ONLY for GraphQL here (if any)
+  // bodyParser is often needed and might be applied globally OR just here
+  // Example: app.use(bodyParser.json()); // Apply here if not global
 
-  app.get("/", (req, res) =>
-    res.status(200).json({ message: "Everything is good" })
-  );
+  // Remove global routes like app.get('/') if they are handled in src/index.ts
+
 
   const graphqlServer = new ApolloServer<GraphqlContext>({
     typeDefs: `
@@ -47,24 +51,29 @@ export async function initServer() {
       ...Tweet.resolvers.extraResolvers,
       ...User.resolvers.extraResolvers,
     },
+     // Consider disabling introspection & landing page plugin in production
+     // introspection: process.env.NODE_ENV !== 'production',
   });
 
   await graphqlServer.start();
 
+  // Attach GraphQL middleware to the app instance created within this function
   app.use(
     "/graphql",
+    // If not using global cors in src/index.ts, you might add cors options here
+    // cors(corsOptions), // Example if cors is needed specifically here
     expressMiddleware(graphqlServer, {
       context: async ({ req, res }) => {
+        // Ensure Authorization header might be undefined
+        const authHeader = req.headers.authorization;
+        const token = authHeader?.startsWith("Bearer ") ? authHeader.split("Bearer ")[1] : undefined;
         return {
-          user: req.headers.authorization
-            ? JWTService.decodeToken(
-                req.headers.authorization.split("Bearer ")[1]
-              )
-            : undefined,
+          user: token ? JWTService.decodeToken(token) : undefined,
         };
       },
     })
   );
 
+  // Return the configured app instance
   return app;
 }

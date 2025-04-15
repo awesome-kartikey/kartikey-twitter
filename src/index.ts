@@ -22,7 +22,7 @@ async function init() {
   // Configure CORS Options
   const allowedOrigins = [
     process.env.FRONTEND_URL,
-    "http://localhost:3000",
+    "https://pulse-stream.onrender.com",
   ].filter(Boolean) as string[];
 
   if (!process.env.FRONTEND_URL) {
