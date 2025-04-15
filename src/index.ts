@@ -3,26 +3,20 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { initServer } from "./app"; // Ensure this path is correct
+import { initServer } from "./app";
 import * as dotenv from "dotenv";
 dotenv.config();
 
 import { createRouteHandler } from "uploadthing/express";
-import { ourFileRouter } from "./app/api/uploadthing/core"; // Ensure this path is correct
+import { ourFileRouter } from "./app/api/uploadthing/core";
 
 async function init() {
-  // --- Initialize Express App by calling initServer ---
-  // initServer now creates and returns the app with GraphQL configured
-  const app = await initServer();
-  // --- App instance now exists and has /graphql attached ---
+  const app = express();
 
-  // --- Global Middleware Configuration ---
-  // Apply global middleware to the app instance returned by initServer
-
-  // Configure CORS Options
+  // --- CORS Configuration ---
   const allowedOrigins = [
     process.env.FRONTEND_URL,
-    "https://pulse-stream.onrender.com",
+    "http://localhost:3000",
   ].filter(Boolean) as string[];
 
   if (!process.env.FRONTEND_URL) {
@@ -56,14 +50,21 @@ async function init() {
     allowedHeaders: ["Content-Type", "Authorization"],
   };
 
-  // Apply CORS middleware globally
+  // --- Explicit OPTIONS Handling (Add This Section) ---
+  // Handle OPTIONS requests explicitly for all routes *before* the main CORS middleware.
+  // This often helps resolve stubborn preflight issues.
+  app.options("*", cors(corsOptions)); // Enable preflight across-the-board
+  // --- End Explicit OPTIONS Handling ---
+
+  // Apply CORS middleware globally for non-OPTIONS requests
   app.use(cors(corsOptions));
 
   // Apply bodyParser globally
   app.use(bodyParser.json());
 
   // --- Route Definitions ---
-  // Define other routes AFTER global middleware
+  // Initialize Apollo Server & GraphQL endpoint (assuming it adds /graphql)
+  await initServer(app); // Pass app to be configured
 
   // UploadThing route handler
   app.use(
