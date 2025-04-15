@@ -3,20 +3,26 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { initServer } from "./app";
+import { initServer } from "./app"; // Ensure this path is correct
 import * as dotenv from "dotenv";
 dotenv.config();
 
 import { createRouteHandler } from "uploadthing/express";
-import { ourFileRouter } from "./app/api/uploadthing/core";
+import { ourFileRouter } from "./app/api/uploadthing/core"; // Ensure this path is correct
 
 async function init() {
-  const app = express();
+  // --- Initialize Express App by calling initServer ---
+  // initServer now creates and returns the app with GraphQL already configured
+  const app = await initServer(); // <--- CORRECT: Call initServer without arguments
+  // --- App instance now exists and has /graphql attached ---
 
-  // --- CORS Configuration ---
+  // --- Global Middleware Configuration ---
+  // Apply global middleware to the app instance returned by initServer
+
+  // Configure CORS Options
   const allowedOrigins = [
     process.env.FRONTEND_URL,
-    "http://localhost:3000",
+    "https://pulse-stream.onrender.com",
   ].filter(Boolean) as string[];
 
   if (!process.env.FRONTEND_URL) {
@@ -50,21 +56,19 @@ async function init() {
     allowedHeaders: ["Content-Type", "Authorization"],
   };
 
-  // --- Explicit OPTIONS Handling (Add This Section) ---
-  // Handle OPTIONS requests explicitly for all routes *before* the main CORS middleware.
-  // This often helps resolve stubborn preflight issues.
-  app.options("*", cors(corsOptions)); // Enable preflight across-the-board
-  // --- End Explicit OPTIONS Handling ---
+  // Explicit OPTIONS Handling (Place *before* other uses of cors or routes)
+  // Handles preflight requests for all paths
+  app.options("*", cors(corsOptions));
 
   // Apply CORS middleware globally for non-OPTIONS requests
   app.use(cors(corsOptions));
 
-  // Apply bodyParser globally
+  // Apply bodyParser globally (usually after CORS)
   app.use(bodyParser.json());
 
   // --- Route Definitions ---
-  // Initialize Apollo Server & GraphQL endpoint (assuming it adds /graphql)
-  await initServer(app); // Pass app to be configured
+  // Define other routes AFTER global middleware.
+  // GraphQL is already configured by initServer()
 
   // UploadThing route handler
   app.use(
